@@ -1,0 +1,7 @@
+/{
+    aliases{
+        appled = &green_led_2;
+
+    };
+
+};

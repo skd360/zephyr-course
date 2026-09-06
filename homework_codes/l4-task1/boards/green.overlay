@@ -1,0 +1,6 @@
+/{
+	aliases {
+		sakshigreen = &green_led_2;
+	};
+
+};

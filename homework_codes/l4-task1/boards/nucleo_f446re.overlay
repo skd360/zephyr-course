@@ -1,0 +1,7 @@
+/ {
+    leds: leds {
+        red_led: led0 {
+            gpios = <&gpioa 1 GPIO_ACTIVE_HIGH>;
+        };
+    };
+};
