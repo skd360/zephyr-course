@@ -66,21 +66,5 @@ config CUSTOM_BLINK_PATTERN
 endmenu
 endif 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 source "Kconfig.zephyr"
+rsource "drivers/our_driver/Kconfig"

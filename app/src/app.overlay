@@ -1,11 +1,6 @@
 /{
-    aliases{
-        appled = &green_led_2;
-
-    };
     our_driver0: our_driver{
         compatible = "our,driver";
         status = "okay";
     };
-
 };
