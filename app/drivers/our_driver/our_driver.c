@@ -1,6 +1,8 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/gpio.h>
+#include "our_driver.h"
+#include <zephyr/device.h>
 
 #define DT_DRV_COMPAT our_driver
 
@@ -23,6 +25,9 @@ static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED_NODE, gpios);
 //     LOG_INF("HELLO FROM CHANNEL GET , CHANNEL = %d", chan);
 //     return 0;
 // }
+
+
+
 static int our_driver_sample_fetch(const struct device *dev, enum sensor_channel chan){
 //    LOG_INF("HELLO FROM SAMPLE FETCH , CHANNEL = %d", chan);
     gpio_pin_set_dt(&led, 1);
@@ -35,15 +40,36 @@ static int our_driver_channel_get(const struct device *dev, enum sensor_channel 
     //LOG_INF("HELLO FROM CHANNEL GET , CHANNEL = %d", chan);
     return 0;
 }
-static DEVICE_API(sensor, api_iomico_lesture) = {
+static DEVICE_API(sensor, api_iomico_lecture) = {
     .sample_fetch = our_driver_sample_fetch,
     .channel_get = our_driver_channel_get,
     //.channel_get = channel_get_my_impl,
+    // .sensor_api = {
+    //     .sample_fetch = our_driver_sample_fetch,
+    //     .channel_get = our_driver_channel_get,
+    // },
+    // .set_custom_value = our_driver_set_custom_value,
+
+
 };
 
+
+//U have to change the number 0 and redefine the init function for each instance of the driver. If you have 2 instances of the driver, then you will have to define 2 init functions and 2 DEVICE_DT_INST_DEFINE macros. The number 0 is the instance number of the driver
+//DEVICE_DT_INST_DEFINE(0, init, NULL, NULL, NULL, POST_KERNEL, 80, &api_iomico_lesture);
+ 
+struct our_driver_data {
+    int count;
+};
+int foo(const struct device *dev){
+    struct our_driver_data *data = dev->data;
+    data->count++;
+    LOG_INF("Count is %d", data->count);
+    return 0;
+}
 //init function
 static int init(const struct device *dev){
     LOG_INF("HELLO FROM INIT");
+
     //check if gpio controller is available and ready
     if(!gpio_is_ready_dt(&led)){
         LOG_ERR("GPIO controller is not ready");
@@ -55,14 +81,32 @@ static int init(const struct device *dev){
         LOG_ERR("Failed to configure LED pin");
         return ret;
     }
+
+        /*
+     * Initialize dynamic data
+     */
+    struct our_driver_data *data = dev->data;
+
+    data->count = 0;
+
     return 0;
 }
-//U have to change the number 0 and redefine the init function for each instance of the driver. If you have 2 instances of the driver, then you will have to define 2 init functions and 2 DEVICE_DT_INST_DEFINE macros. The number 0 is the instance number of the driver
-//DEVICE_DT_INST_DEFINE(0, init, NULL, NULL, NULL, POST_KERNEL, 80, &api_iomico_lesture);
- 
 //instead of that
-#define DEV_INST(inst) DEVICE_DT_INST_DEFINE(inst, init, NULL, NULL, NULL, POST_KERNEL, 80, &api_iomico_lesture);
-DT_INST_FOREACH_STATUS_OKAY(DEV_INST);
+#define DEV_INST(inst)                                      \
+    static struct our_driver_data our_driver_data_##inst;   \
+                                                            \
+    DEVICE_DT_INST_DEFINE(                                  \
+        inst,                                               \
+        init,                                               \
+        NULL,                                               \
+        &our_driver_data_##inst,                            \
+        NULL,                                               \
+        POST_KERNEL,                                        \
+        80,                                                 \
+        &api_iomico_lecture                                 \
+    );
+
+DT_INST_FOREACH_STATUS_OKAY(DEV_INST)
 
 //POST KERNEL is a init level, CONFIG_SENSOR_INIT_PRIORITY is a init priority, &api_iomico_lesture is a pointer to the api struct
 //higher level means later like 80 is priority later
@@ -77,3 +121,27 @@ DT_INST_FOREACH_STATUS_OKAY(DEV_INST);
 //     .get_decoder = NULL,
 //     .submit = NULL,
 // };
+
+
+
+
+
+// static int our_driver_set_custom_value(
+//     const struct device *dev,
+//     int value)
+// {
+//     /*
+//      * dev->data points to our_driver_data
+//      */
+//     struct our_driver_data *data = dev->data;
+
+//     /*
+//      * Change dynamic data
+//      */
+//     data->custom_value = value;
+
+//     LOG_INF("custom_value changed to %d",
+//             data->custom_value);
+
+//     return 0;
+// }

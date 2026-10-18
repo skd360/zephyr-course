@@ -3,10 +3,12 @@
 #include <zephyr/device.h>
 //#include <zephyr/logging/log.h>
 #include<zephyr/shell/shell.h>
-
+#include <stdlib.h>
+#include "our_driver.h"
 static const struct device *sensor_dev = DEVICE_DT_GET(DT_NODELABEL(our_driver0));
 //#define SENSOR_NODE DT_NODELABEL(our_driver0)
 struct sensor_value val;
+
 static int cmd_sensor_info(const struct shell *shell, size_t argc, char **argv){
     ARG_UNUSED(argc);
     ARG_UNUSED(argv);
@@ -34,6 +36,30 @@ static int cmd_sample_get(const struct shell *shell, size_t argc, char **argv){
     shell_print(shell, "Ambient Temperature: %d.%06d C", val.val1, val.val2);
     return 0;
 }
+
+static int cmd_sensor_set(const struct shell *shell, size_t argc, char **argv){
+    char *endptr;
+    if (argc < 2) {
+        shell_error(shell, "Missing argument: value");
+        return -EINVAL;
+    }
+    long num = strtol(argv[1], &endptr, 10);
+// - "\0" is a string literal (an array containing a null character and the string terminator).
+// - '\0' is a single character representing the null terminator.
+    if (*endptr != '\0'){
+        shell_error(shell, "Invalid argument: %s", argv[1]);  //eg for 25abc strtol will convert 25 and set endptr to point to abc. So *endptr will be a and not \0. So this is an invalid argument
+        return -EINVAL;
+    }
+    if(num < 0 || num > 100){
+        shell_error(shell, "Invalid argument: %ld. Value must be between 0 and 100", num);
+        return -EINVAL;
+    }
+    //if(ERANGE)
+
+    shell_print(shell, "Setting sensor value to %ld", num);
+    foo(sensor_dev);    
+    return 0;
+}
 // static int cmd_channel_get_handler(const struct shell *shell, size_t argc, char **argv){
 //     ARG_UNUSED(argc);
 //     ARG_UNUSED(argv);
@@ -43,6 +69,7 @@ static int cmd_sample_get(const struct shell *shell, size_t argc, char **argv){
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_demo, 
     //SHELL_CMD_ARG(channel_get, NULL, "Get channel value", cmd_channel_get_handler, 1, 0),
+    SHELL_CMD_ARG(sensor_set, NULL, "Set sensor value", cmd_sensor_set, 2, 0),
     SHELL_CMD(info, NULL, "Get sensor info", cmd_sensor_info),
     SHELL_CMD(sample_fetch, NULL, "Fetch sensor sample", cmd_sample_fetch),
     SHELL_CMD(sample_get, NULL, "Get sensor sample", cmd_sample_get),
